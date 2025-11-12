@@ -3,23 +3,27 @@ version: 2.1
 jobs:
   deploy:
     docker:
-      - image: cimg/node:18.17
+      - image: cimg/node:20.9    # LTS actual, consistente con el taller
+    environment:
+      RAILWAY_LOG_FORMAT: pretty
     steps:
       - checkout
+
       - run:
-          name: Instalar Railway CLI
-          command: npm install -g railway
-      - run:
-          name: Verificar variables y preparar contexto
+          name: Verificar variable de entorno (RAILWAY_TOKEN)
           command: |
             if [ -z "$RAILWAY_TOKEN" ]; then
-              echo "ERROR: Falta RAILWAY_TOKEN en CircleCI"
+              echo "ERROR: falta RAILWAY_TOKEN en Project Settings > Environment Variables"
               exit 1
             fi
             echo "RAILWAY_TOKEN detectado correctamente"
+
       - run:
-          name: Desplegar en Railway
-          command: railway up --amiable-perfection --ci
+          name: Desplegar a Railway con npx (sin instalación global)
+          command: |
+            # Sustituye el nombre del servicio por el tuyo exacto en Railway
+            npx -y @railway/cli@latest up --service="amiable-perfection" --ci
+            # Si prefieres por ID de servicio:  npx -y @railway/cli@latest up --service-id="$RAILWAY_SERVICE_ID" --ci
 
 workflows:
   version: 2
