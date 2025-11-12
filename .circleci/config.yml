@@ -5,7 +5,6 @@ jobs:
     docker:
       - image: cimg/node:20.9
     working_directory: ~/project/bankchurn-api
-
     steps:
       - checkout:
           path: ~/project
@@ -22,7 +21,7 @@ jobs:
             echo "Variables de entorno presentes."
 
       - run:
-          name: Desplegar directamente con Railway CLI (sin login)
+          name: Desplegar directamente con Railway (sin login)
           command: |
             npx -y @railway/cli@latest up \
               --project "$RAILWAY_PROJECT_ID" \
@@ -30,8 +29,12 @@ jobs:
               --ci \
               --token "$RAILWAY_TOKEN"
 
-
-
-
-
-
+workflows:
+  version: 2
+  deploy_pipeline:
+    jobs:
+      - deploy_app_to_railway:
+          filters:
+            branches:
+              only:
+                - main
