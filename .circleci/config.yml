@@ -1,51 +1,35 @@
-version: '2.1'
-orbs:
-  node: circleci/node@5.1.0
-
-defaults: &defaults
-  docker:
-    - image: cimg/python:3.10
-  working_directory: ~/project
-
-prepare_venv: &prepare_venv
-  run:
-    name: Create venv
-    command: |
-      python -m venv venv
-      source venv/bin/activate
-      pip install --upgrade pip
-
-jobs:
-  deploy_app_to_railway:
-    <<: *defaults
-    steps:
-      - checkout:
-          path: ~/project/
-      - node/install:
-          node-version: '20.9'
-      - run: node --version 
-      - run: npm i -g @railway/cli
-      - run:
-          name: Deploy to Railway App
-          command: |
-            cd bankchurn-api
-            railway up --service=pacific-clarity
-            railway up --detach
-
-
-tags_only: &tags_only
-  filters:
-    branches:
-      ignore: /.*/
-    tags:
-      only: /^.*/
+version: 2.1
 
 workflows:
-  version: 1
   deploy_pipeline:
     jobs:
       - deploy_app_to_railway:
           filters:
             branches:
-              only:
-                - main
+              only: main
+
+jobs:
+  deploy_app_to_railway:
+    docker:
+      - image: cimg/node:18.20
+    steps:
+      - checkout
+
+      - run:
+          name: Instalar Railway CLI
+          command: |
+            npm install -g @railway/cli
+            railway --version
+
+      - run:
+          name: Login Railway con token
+          command: |
+            railway login --token "$RAILWAY_TOKEN"
+            railway whoami
+
+      - run:
+          name: Desplegar servicio
+          command: |
+            cd bankchurn-api
+            # CAMBIA el nombre entre comillas por el NOMBRE EXACTO de tu servicio en Railway
+            railway up --service "amiable-perfection" --yes --detach
