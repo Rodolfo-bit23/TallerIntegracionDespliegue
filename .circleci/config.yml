@@ -1,3 +1,19 @@
+     version: 2.1
+orbs:
+  node: circleci/node@5.1.0
+
+jobs:
+  deploy_app_to_railway:
+    docker:
+      - image: cimg/python:3.10
+    working_directory: ~/project/bankchurn-api
+    steps:
+      - checkout:
+          path: ~/project
+      - node/install:
+          node-version: '20.9'
+      - run: node --version
+
       - run:
           name: Verificar variables requeridas
           command: |
@@ -28,6 +44,17 @@
           name: Desplegar a Railway
           command: |
             npx -y @railway/cli@latest up --ci --token "$RAILWAY_TOKEN"
+
+workflows:
+  version: 2
+  deploy_pipeline:
+    jobs:
+      - deploy_app_to_railway:
+          filters:
+            branches:
+              only: [main]
+
+
 
 
 
