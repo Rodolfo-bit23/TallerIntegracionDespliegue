@@ -1,39 +1,48 @@
 version: 2.1
+orbs:
+  node: circleci/node@5.1.0
 
 jobs:
-  deploy:
+  deploy_app_to_railway:
     docker:
-      - image: cimg/node:20.9
+      - image: cimg/python:3.10
+    working_directory: ~/project/bankchurn-api
     steps:
-      - checkout
+      - checkout:
+          path: ~/project
+      - node/install:
+          node-version: '20.9'
+      - run: node --version
 
       - run:
           name: Verificar variables requeridas
           command: |
             for v in RAILWAY_TOKEN RAILWAY_PROJECT_ID RAILWAY_SERVICE_ID; do
-              if [ -z "${!v}" ]; then
-                echo "ERROR: Falta variable $v en CircleCI > Project Settings > Environment Variables"
+              if [ -z "${!v:-}" ]; then
+                echo "ERROR: Falta variable $v"
                 exit 1
               fi
             done
-            echo "Variables de entorno OK"
-
-      # (Opcional) Diagnóstico: lista servicios del proyecto
-      - run:
-          name: Ver diagnóstico de servicios en el proyecto
-          command: |
-            npx -y @railway/cli@latest service list --projectId="$RAILWAY_PROJECT_ID"
 
       - run:
-          name: Desplegar a Railway (IDs explícitos)
+          name: Link no-interactivo a Railway
           command: |
-            npx -y @railway/cli@latest up \
-              --projectId="$4610234f-bae2-4087-b682-5922e7256947" \
-              --serviceId="7d80c812-94f6-48cb-90a1-0645fa77f60d" \
-              --ci
+            npx -y @railway/cli@latest link \
+              --project "$RAILWAY_PROJECT_ID" \
+              --service "$RAILWAY_SERVICE_ID"
+
+      - run:
+          name: Desplegar
+          command: |
+            npx -y @railway/cli@latest up --ci
 
 workflows:
   version: 2
-  deploy_workflow:
+  deploy_pipeline:
     jobs:
-      - deploy
+      - deploy_app_to_railway:
+          filters:
+            branches:
+              only: [main]
+
+
