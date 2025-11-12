@@ -1,48 +1,33 @@
-version: 2.1
-orbs:
-  node: circleci/node@5.1.0
-
-jobs:
-  deploy_app_to_railway:
-    docker:
-      - image: cimg/python:3.10
-    working_directory: ~/project/bankchurn-api
-    steps:
-      - checkout:
-          path: ~/project
-      - node/install:
-          node-version: '20.9'
-      - run: node --version
-
       - run:
           name: Verificar variables requeridas
           command: |
             for v in RAILWAY_TOKEN RAILWAY_PROJECT_ID RAILWAY_SERVICE_ID; do
               if [ -z "${!v:-}" ]; then
-                echo "ERROR: Falta variable $v"
+                echo "ERROR: Falta variable $v en CircleCI > Project Settings > Environment Variables"
                 exit 1
               fi
             done
+            echo "Variables presentes (token len=${#RAILWAY_TOKEN})"
 
       - run:
-          name: Link no-interactivo a Railway
+          name: Login no interactivo a Railway (con token)
+          command: |
+            # Algunas versiones usan 'login', otras 'auth login': probamos ambas.
+            npx -y @railway/cli@latest login --token "$RAILWAY_TOKEN" \
+              || npx -y @railway/cli@latest auth login --token "$RAILWAY_TOKEN"
+
+      - run:
+          name: Link no-interactivo (proyecto y servicio)
           command: |
             npx -y @railway/cli@latest link \
               --project "$RAILWAY_PROJECT_ID" \
-              --service "$RAILWAY_SERVICE_ID"
+              --service "$RAILWAY_SERVICE_ID" \
+              --token "$RAILWAY_TOKEN"
 
       - run:
-          name: Desplegar
+          name: Desplegar a Railway
           command: |
-            npx -y @railway/cli@latest up --ci
+            npx -y @railway/cli@latest up --ci --token "$RAILWAY_TOKEN"
 
-workflows:
-  version: 2
-  deploy_pipeline:
-    jobs:
-      - deploy_app_to_railway:
-          filters:
-            branches:
-              only: [main]
 
 
