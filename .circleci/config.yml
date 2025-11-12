@@ -3,27 +3,34 @@ version: 2.1
 jobs:
   deploy:
     docker:
-      - image: cimg/node:20.9    # LTS actual, consistente con el taller
-    environment:
-      RAILWAY_LOG_FORMAT: pretty
+      - image: cimg/node:20.9
     steps:
       - checkout
 
       - run:
-          name: Verificar variable de entorno (RAILWAY_TOKEN)
+          name: Verificar variables requeridas
           command: |
-            if [ -z "$RAILWAY_TOKEN" ]; then
-              echo "ERROR: falta RAILWAY_TOKEN en Project Settings > Environment Variables"
-              exit 1
-            fi
-            echo "RAILWAY_TOKEN detectado correctamente"
+            for v in RAILWAY_TOKEN RAILWAY_PROJECT_ID RAILWAY_SERVICE_ID; do
+              if [ -z "${!v}" ]; then
+                echo "ERROR: Falta variable $v en CircleCI > Project Settings > Environment Variables"
+                exit 1
+              fi
+            done
+            echo "Variables de entorno OK"
+
+      # (Opcional) Diagnóstico: lista servicios del proyecto
+      - run:
+          name: Ver diagnóstico de servicios en el proyecto
+          command: |
+            npx -y @railway/cli@latest service list --projectId="$RAILWAY_PROJECT_ID"
 
       - run:
-          name: Desplegar a Railway con npx (sin instalación global)
+          name: Desplegar a Railway (IDs explícitos)
           command: |
-            # Sustituye el nombre del servicio por el tuyo exacto en Railway
-            npx -y @railway/cli@latest up --service="amiable-perfection" --ci
-            # Si prefieres por ID de servicio:  npx -y @railway/cli@latest up --service-id="$RAILWAY_SERVICE_ID" --ci
+            npx -y @railway/cli@latest up \
+              --projectId="$4610234f-bae2-4087-b682-5922e7256947" \
+              --serviceId="7d80c812-94f6-48cb-90a1-0645fa77f60d" \
+              --ci
 
 workflows:
   version: 2
