@@ -1,18 +1,14 @@
 version: 2.1
-orbs:
-  node: circleci/node@5.1.0
 
 jobs:
   deploy_app_to_railway:
     docker:
-      - image: cimg/python:3.10
+      - image: cimg/node:20.9
     working_directory: ~/project/bankchurn-api
+
     steps:
       - checkout:
           path: ~/project
-      - node/install:
-          node-version: '20.9'
-      - run: node --version
 
       - run:
           name: Verificar variables requeridas
@@ -23,36 +19,16 @@ jobs:
                 exit 1
               fi
             done
-            echo "Variables presentes (token len=${#RAILWAY_TOKEN})"
+            echo "Variables de entorno presentes."
 
       - run:
-          name: Login no interactivo a Railway (con token)
+          name: Desplegar directamente con Railway CLI (sin login)
           command: |
-            # Algunas versiones usan 'login', otras 'auth login': probamos ambas.
-            npx -y @railway/cli@latest login --token "$RAILWAY_TOKEN" \
-              || npx -y @railway/cli@latest auth login --token "$RAILWAY_TOKEN"
-
-      - run:
-          name: Link no-interactivo (proyecto y servicio)
-          command: |
-            npx -y @railway/cli@latest link \
+            npx -y @railway/cli@latest up \
               --project "$RAILWAY_PROJECT_ID" \
               --service "$RAILWAY_SERVICE_ID" \
+              --ci \
               --token "$RAILWAY_TOKEN"
-
-      - run:
-          name: Desplegar a Railway
-          command: |
-            npx -y @railway/cli@latest up --ci --token "$RAILWAY_TOKEN"
-
-workflows:
-  version: 2
-  deploy_pipeline:
-    jobs:
-      - deploy_app_to_railway:
-          filters:
-            branches:
-              only: [main]
 
 
 
