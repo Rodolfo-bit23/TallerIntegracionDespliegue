@@ -22,14 +22,33 @@ jobs:
             railway --version
 
       - run:
-          name: Login Railway con token
+          name: Verificar variables y preparar contexto
           command: |
-            railway login --token "$RAILWAY_TOKEN"
-            railway whoami
+            set -e
+            # 1) El token DEBE existir (CircleCI → Project Settings → Environment Variables)
+            if [ -z "$RAILWAY_TOKEN" ]; then
+              echo "ERROR: Falta RAILWAY_TOKEN en CircleCI"; exit 1
+            fi
+
+            # 2) Railway CLI lee el token DESDE la variable de entorno (no usar --token)
+            export RAILWAY_TOKEN="$RAILWAY_TOKEN"
+
+            # 3) (Opcional pero recomendado) fija proyecto/ambiente para evitar prompts
+            if [ -n "$RAILWAY_PROJECT_ID" ]; then
+              railway link --project "$RAILWAY_PROJECT_ID"
+            fi
+            if [ -n "$RAILWAY_ENVIRONMENT_ID" ]; then
+              railway environment switch --id "$RAILWAY_ENVIRONMENT_ID"
+            fi
+
+            # Este whoami a veces devuelve código ≠0 aunque el token esté bien; no rompamos el job
+            railway whoami || true
+            railway status  || true
 
       - run:
-          name: Desplegar servicio
+          name: Desplegar servicio en Railway
           command: |
+            set -e
             cd bankchurn-api
-            # CAMBIA el nombre entre comillas por el NOMBRE EXACTO de tu servicio en Railway
+            # Usa el nombre EXACTO del servicio que viste en Railway
             railway up --service "amiable-perfection" --yes --detach
