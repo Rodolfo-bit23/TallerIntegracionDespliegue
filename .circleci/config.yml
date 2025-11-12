@@ -20,3 +20,9 @@ jobs:
       - run:
           name: Desplegar en Railway
           command: railway up --amiable-perfection --ci
+
+workflows:
+  version: 2
+  deploy_workflow:
+    jobs:
+      - deploy
