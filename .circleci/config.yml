@@ -1,36 +1,47 @@
-version: 2.1
+version: '2.1'
+orbs:
+  node: circleci/node@5.1.0
+
+defaults: &defaults
+  docker:
+    - image: cimg/python:3.10
+  working_directory: ~/project
+
+prepare_venv: &prepare_venv
+  run:
+    name: Create venv
+    command: |
+      python -m venv venv
+      source venv/bin/activate
+      pip install --upgrade pip
 
 jobs:
   deploy_app_to_railway:
-    docker:
-      - image: cimg/node:20.9
-    working_directory: ~/project/bankchurn-api
+    <<: *defaults
     steps:
       - checkout:
-          path: ~/project
-
+          path: ~/project/
+      - node/install:
+          node-version: '20.9'
+      - run: node --version 
+      - run: npm i -g @railway/cli
       - run:
-          name: Verificar variables requeridas
+          name: Deploy to Railway App
           command: |
-            for v in RAILWAY_TOKEN RAILWAY_PROJECT_ID RAILWAY_SERVICE_ID; do
-              if [ -z "${!v:-}" ]; then
-                echo "ERROR: Falta variable $v en CircleCI > Project Settings > Environment Variables"
-                exit 1
-              fi
-            done
-            echo "Variables de entorno presentes."
+            cd bankchurn-api
+            railway up --service=pacific-clarity
+            railway up --detach
 
-      - run:
-          name: Desplegar directamente con Railway (sin login)
-          command: |
-            npx -y @railway/cli@latest up \
-              --project "$RAILWAY_PROJECT_ID" \
-              --service "$RAILWAY_SERVICE_ID" \
-              --ci \
-              --token "$RAILWAY_TOKEN"
+
+tags_only: &tags_only
+  filters:
+    branches:
+      ignore: /.*/
+    tags:
+      only: /^.*/
 
 workflows:
-  version: 2
+  version: 1
   deploy_pipeline:
     jobs:
       - deploy_app_to_railway:
@@ -38,3 +49,4 @@ workflows:
             branches:
               only:
                 - main
+
