@@ -12,7 +12,8 @@ prepare_venv: &prepare_venv
     name: Deploy to Railway App
     command: |
       set -eo pipefail
-      cd bankchurn-api  # <-- cambia/borra esta línea si tu app no está en esa carpeta
+      cd bankchurn-api    # si tu app está en la raíz, BORRA esta línea
+      echo "Proyecto: $RAILWAY_PROJECT_ID  |  Servicio: $RAILWAY_SERVICE_ID"
       railway link --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID"
       railway up --detach --yes
 
@@ -50,5 +51,6 @@ workflows:
             branches:
               only:
                 - main
+
 
 
