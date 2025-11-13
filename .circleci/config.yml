@@ -14,48 +14,39 @@ jobs:
     steps:
       - checkout:
           path: ~/project/
-
       - node/install:
           node-version: '20.9'
       - run: node --version
-      - run: npm i -g @railway/cli
 
-      # --- Autenticación Railway: escribir el token en ~/.railway/config.json ---
+      # ✅ Fijamos Railway CLI a una versión 3.x estable que sí acepta --token y --service
+      - run: npm i -g @railway/cli@3.22.0
+      - run: railway --version
+
+      # ✅ Login no interactivo con token (3.x lo soporta)
       - run:
-          name: Configure Railway auth
+          name: Railway Login (token)
           command: |
             set -e
-            # Acepta cualquiera de los dos nombres de variable
-            if [ -z "$RAILWAY_API_TOKEN" ] && [ -n "$RAILWAY_TOKEN" ]; then
-              export RAILWAY_API_TOKEN="$RAILWAY_TOKEN"
+            # Usa RAILWAY_TOKEN; si solo tienes RAILWAY_API_TOKEN, lo copiamos
+            if [ -z "$RAILWAY_TOKEN" ] && [ -n "$RAILWAY_API_TOKEN" ]; then
+              export RAILWAY_TOKEN="$RAILWAY_API_TOKEN"
             fi
-            if [ -z "$RAILWAY_API_TOKEN" ]; then
-              echo "Falta RAILWAY_API_TOKEN (o RAILWAY_TOKEN)."
+            if [ -z "$RAILWAY_TOKEN" ]; then
+              echo "Falta RAILWAY_TOKEN (o RAILWAY_API_TOKEN)."
               exit 1
             fi
-            mkdir -p ~/.railway
-            printf '{"token":"%s"}' "$RAILWAY_API_TOKEN" > ~/.railway/config.json
-            chmod 600 ~/.railway/config.json
-            echo "Auth OK → ~/.railway/config.json"
-            railway --version
+            railway login --token "$RAILWAY_TOKEN"
 
-      # --- Despliegue ---
+      # ✅ Despliegue explícito por IDs
       - run:
           name: Deploy to Railway App
           command: |
             set -eo pipefail
-            # Si tu app está en la RAÍZ del repo, borra la línea siguiente:
+            # Si tu app está en la RAÍZ, borra esta línea:
             cd bankchurn-api
             echo "PROJECT=$RAILWAY_PROJECT_ID | SERVICE=$RAILWAY_SERVICE_ID"
-
-            # Enlaza por IDs (si falla el link, igual up con IDs)
-            railway link --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID" || true
-
-            # Despliegue explícito por IDs (no interactivo)
-            railway up \
-              --project "$RAILWAY_PROJECT_ID" \
-              --service "$RAILWAY_SERVICE_ID" \
-              --detach --yes
+            railway link --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID"
+            railway up --service "$RAILWAY_SERVICE_ID" --detach --yes
 
 workflows:
   version: 2
@@ -66,6 +57,8 @@ workflows:
             branches:
               only:
                 - main
+
+
 
 
 
