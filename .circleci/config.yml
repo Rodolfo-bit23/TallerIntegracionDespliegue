@@ -8,12 +8,13 @@ defaults: &defaults
   working_directory: ~/project
 
 prepare_venv: &prepare_venv
-  run:
-    name: Create venv
+  - run:
+    name: Deploy to Railway App
     command: |
-      python -m venv venv
-      source venv/bin/activate
-      pip install --upgrade pip
+      set -eo pipefail
+      cd bankchurn-api  # <-- cambia/borra esta línea si tu app no está en esa carpeta
+      railway link --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID"
+      railway up --detach --yes
 
 jobs:
   deploy_app_to_railway:
@@ -49,4 +50,5 @@ workflows:
             branches:
               only:
                 - main
+
 
