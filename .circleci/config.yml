@@ -19,24 +19,30 @@ jobs:
       - run: node --version
       - run: npm i -g @railway/cli
 
-      # --- Diagnóstico (opcional pero MUY útil) ---
+      # 1) Login no interactivo con el token (evita "Unauthorized")
+      - run:
+          name: Railway Login (non-interactive)
+          command: |
+            set -e
+            railway login --token "$RAILWAY_TOKEN"
+
+      # 2) Diagnóstico útil (verifica visibilidad de proyecto/servicios)
       - run:
           name: Railway Diagnostics
           command: |
             set -e
             railway --version
-            echo "Proyectos visibles:"
-            railway projects list || true
+            echo "Proyectos visibles con el token:"
+            railway projects list
             echo "Servicios del proyecto configurado:"
-            railway services list --project "$RAILWAY_PROJECT_ID" || true
+            railway services list --project "$RAILWAY_PROJECT_ID"
 
-      # --- Despliegue ---
+      # 3) Despliegue
       - run:
           name: Deploy to Railway App
           command: |
             set -eo pipefail
-            # Si tu app está en la RAÍZ del repo, BORRA la línea siguiente:
-            cd bankchurn-api
+            # Si tu app está en la RAÍZ del repo, borra la línea siguiente:
             echo "Proyecto: $RAILWAY_PROJECT_ID  |  Servicio: $RAILWAY_SERVICE_ID"
             railway link --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID"
             railway up --detach --yes
@@ -50,6 +56,7 @@ workflows:
             branches:
               only:
                 - main
+
 
 
 
