@@ -9,10 +9,21 @@ defaults: &defaults
 
 prepare_venv: &prepare_venv
   - run:
+    name: Railway Diagnostics
+    command: |
+      set -e
+      railway --version
+      echo "Proyectos visibles:"
+      railway projects list || true
+      echo "Servicios del proyecto configurado:"
+      railway services list --project "$RAILWAY_PROJECT_ID" || true
+
+- run:
     name: Deploy to Railway App
     command: |
       set -eo pipefail
-      cd bankchurn-api    # si tu app está en la raíz, BORRA esta línea
+      # OJO: si tu app está en la raíz, borra esta línea:
+      cd bankchurn-api
       echo "Proyecto: $RAILWAY_PROJECT_ID  |  Servicio: $RAILWAY_SERVICE_ID"
       railway link --project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID"
       railway up --detach --yes
@@ -51,6 +62,7 @@ workflows:
             branches:
               only:
                 - main
+
 
 
 
